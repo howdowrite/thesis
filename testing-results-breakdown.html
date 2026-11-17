@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Delegation Advisor Testing Results — Plain English Breakdown</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      line-height: 1.6;
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 2rem 1.5rem;
+      color: #1a1a2e;
+      background: #fafafa;
+    }
+    h1 { font-size: 2rem; font-weight: 700; margin-bottom: 0.5rem; color: #0f172a; }
+    h2 { font-size: 1.5rem; font-weight: 600; margin-top: 2.5rem; margin-bottom: 1rem; color: #1e293b; border-bottom: 1px solid #e2e8f0; padding-bottom: 0.5rem; }
+    h3 { font-size: 1.2rem; font-weight: 600; margin-top: 1.5rem; margin-bottom: 0.75rem; color: #334155; }
+    p { margin: 0.75rem 0; }
+    strong { font-weight: 600; }
+    code { background: #f1f5f9; padding: 0.15rem 0.4rem; border-radius: 4px; font-size: 0.9em; font-family: "SF Mono", "Fira Code", monospace; }
+    pre { background: #0f172a; color: #e2e8f0; padding: 1rem; border-radius: 8px; overflow-x: auto; font-size: 0.85rem; line-height: 1.5; }
+    table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.9rem; background: white; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border-radius: 8px; overflow: hidden; }
+    th, td { padding: 0.75rem 1rem; text-align: left; border-bottom: 1px solid #e2e8f0; }
+    th { background: #f8fafc; font-weight: 600; color: #334155; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover { background: #f8fafc; }
+    .highlight { background: #fef3c7; padding: 0.1rem 0.3rem; border-radius: 3px; }
+    .pass { color: #059669; font-weight: 600; }
+    .fail { color: #dc2626; font-weight: 600; }
+    .summary-box { background: white; border-left: 4px solid #3b82f6; padding: 1rem 1.5rem; margin: 1.5rem 0; border-radius: 0 8px 8px 0; }
+    .warning-box { background: #fef2f2; border-left: 4px solid #ef4444; padding: 1rem 1.5rem; margin: 1.5rem 0; border-radius: 0 8px 8px 0; }
+    .success-box { background: #f0fdf4; border-left: 4px solid #22c55e; padding: 1rem 1.5rem; margin: 1.5rem 0; border-radius: 0 8px 8px 0; }
+    .neutral-box { background: #f8fafc; border-left: 4px solid #64748b; padding: 1rem 1.5rem; margin: 1.5rem 0; border-radius: 0 8px 8px 0; }
+    ul { margin: 0.75rem 0; padding-left: 1.5rem; }
+    li { margin: 0.4rem 0; }
+    .toc { background: white; padding: 1.5rem; border-radius: 8px; margin-bottom: 2rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+    .toc h2 { margin-top: 0; border: none; padding: 0; font-size: 1.2rem; }
+    .toc a { color: #3b82f6; text-decoration: none; }
+    .toc a:hover { text-decoration: underline; }
+    .toc ul { list-style: none; padding-left: 0; }
+    .toc li { margin: 0.3rem 0; }
+    .tag { display: inline-block; font-size: 0.75rem; font-weight: 600; padding: 0.15rem 0.5rem; border-radius: 9999px; margin-right: 0.5rem; }
+    .tag-primary { background: #dbeafe; color: #1e40af; }
+    .tag-exploratory { background: #fef3c7; color: #92400e; }
+    .tag-secondary { background: #e0e7ff; color: #3730a3; }
+    .tag-posthoc { background: #fce7f3; color: #9d174d; }
+    footer { margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid #e2e8f0; color: #64748b; font-size: 0.85rem; }
+  </style>
+</head>
+<body>
+
+  <h1>Delegation Advisor Testing Results — Plain English Breakdown</h1>
+  <p style="color: #64748b; margin-top: -0.5rem;">Generated from repository data on 2026-11-14</p>
+
+  <nav class="toc">
+    <h2>Table of Contents</h2>
+    <ul>
+      <li><a href="#overview">What Is This Experiment?</a></li>
+      <li><a href="#features">Features & How We Got the Numbers</a></li>
+      <li><a href="#primary">Primary Result</a></li>
+      <li><a href="#hypothesis">Formal Hypothesis Tests</a></li>
+      <li><a href="#holdflag">Hold-Flag Exploratory Check</a></li>
+      <li><a href="#embedding">Embedding Advisor (Secondary)</a></li>
+      <li><a href="#summary">One-Sentence Summary</a></li>
+    </ul>
+  </nav>
+
+  <section id="overview">
+    <h2>What Is This Experiment? <span class="tag tag-primary">Primary</span></h2>
+    <p>You're testing a <strong>Delegation Advisor</strong> — a system that tries to predict whether a cheaper AI model (<code>Kimi</code>) can solve a coding task, so it can route easy tasks to the cheap model and hard tasks to the expensive "frontier" model.</p>
+    <p><strong>Goal:</strong> Save money without losing many solved tasks.</p>
+    <p><strong>Dataset:</strong> 266 tasks from 3 Python projects (<code>ansible</code>, <code>openlibrary</code>, <code>qutebrowser</code>), each run once with a 50-call cap.</p>
+    <p><strong>Baseline policy (Policy C — "Cheaper First"):</strong> Try the cheap model first; if it fails, fall back to the frontier model.</p>
+  </section>
+
+  <section id="features">
+    <h2>Features & How We Arrived at the Numbers <span class="tag tag-primary">Primary</span></h2>
+
+    <h3>The 8 Candidate Features (Protocol Section 5)</h3>
+    <p>All features are computed from the <strong>issue text alone</strong> — no code, no repository metadata, no outcome information. Count features enter the model as <code>ln(1 + count)</code>; binary features enter as-is.</p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Code</th>
+          <th>Feature</th>
+          <th>Description</th>
+          <th>Type</th>
+          <th>Transform</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>F1</td><td><code>n_chars</code></td><td>Total characters in issue text</td><td>Count</td><td>ln(1 + x)</td></tr>
+        <tr><td>F2</td><td><code>n_code_blocks</code></td><td>Fenced code blocks (``` ... ```)</td><td>Count</td><td>ln(1 + x)</td></tr>
+        <tr><td>F3</td><td><code>has_trace_or_error</code></td><td>Contains traceback or exception name (e.g., <code>ValueError</code>, <code>TypeError</code>)</td><td>Binary</td><td>0/1</td></tr>
+        <tr><td>F4</td><td><code>n_code_refs</code></td><td>Distinct inline code spans (<code>`...`</code>) and file-like names (<code>foo.py</code>, <code>bar.yml</code>)</td><td>Count</td><td>ln(1 + x)</td></tr>
+        <tr><td>F5</td><td><code>n_headings</code></td><td>Markdown headings (# ... ######)</td><td>Count</td><td>ln(1 + x)</td></tr>
+        <tr><td>F6</td><td><code>n_urls</code></td><td>URLs (<code>http://</code> or <code>https://</code>)</td><td>Count</td><td>ln(1 + x)</td></tr>
+        <tr><td>F7</td><td><code>mentions_tests</code></td><td>Mentions tests/pytest/unittest/assert</td><td>Binary</td><td>0/1</td></tr>
+        <tr><td>F8</td><td><code>n_list_items</code></td><td>Numbered or bulleted list lines</td><td>Count</td><td>ln(1 + x)</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Outcome-Blind Screening (Protocol Section 5)</h3>
+    <p>Before any modeling, features are screened <strong>without looking at outcomes</strong>. A feature is dropped if it is nonzero in <strong><10% of tasks</strong>. This prevents cherry-picking features that happen to correlate with the label by chance.</p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Feature</th>
+          <th>Nonzero Share</th>
+          <th>Kept?</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td><code>n_chars</code></td><td>100%</td><td class="pass">Yes</td></tr>
+        <tr><td><code>n_code_blocks</code></td><td>~60%</td><td class="pass">Yes</td></tr>
+        <tr><td><code>has_trace_or_error</code></td><td>~20%</td><td class="pass">Yes</td></tr>
+        <tr><td><code>n_code_refs</code></td><td>~70%</td><td class="pass">Yes</td></tr>
+        <tr><td><code>n_headings</code></td><td>~40%</td><td class="pass">Yes</td></tr>
+        <tr><td><code>n_urls</code></td><td><10%</td><td class="fail">Dropped</td></tr>
+        <tr><td><code>mentions_tests</code></td><td>~30%</td><td class="pass">Yes</td></tr>
+        <tr><td><code>n_list_items</code></td><td>~50%</td><td class="pass">Yes</td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>Result:</strong> 7 features kept (<code>n_chars</code>, <code>n_code_blocks</code>, <code>has_trace_or_error</code>, <code>n_code_refs</code>, <code>n_headings</code>, <code>mentions_tests</code>, <code>n_list_items</code>). <code>n_urls</code> dropped (too rare).</p>
+
+    <h3>Model & Training Procedure</h3>
+    <ul>
+      <li><strong>Model:</strong> Logistic regression (L2 regularization) with <code>StandardScaler</code> on the 7 features.</li>
+      <li><strong>Label:</strong> <code>out_kimi_solved</code> (1 if Kimi solves the task, 0 otherwise).</li>
+      <li><strong>Regularization (C):</strong> Chosen by <strong>inner 5-fold CV on training folds</strong> minimizing mean <strong>log loss</strong> (not accuracy). Candidate values: <code>{0.01, 0.1, 1.0, 10.0}</code>. Ties → smaller C.</li>
+      <li><strong>Outer CV:</strong> 20 repetitions × stratified 5-fold (seed 42). Each task gets 20 out-of-fold probability estimates; final prediction = mean across reps.</li>
+      <li><strong>Routing threshold (θ):</strong> Per training fold, θ = mean Kimi cost / mean Opus cost on that fold (~0.14). Task routed to frontier if predicted probability < θ.</li>
+    </ul>
+
+    <h3>AUC Calculation</h3>
+    <ul>
+      <li><strong>Primary AUC:</strong> Out-of-fold predictions averaged over 20 reps vs. true Kimi success labels. Computed via <code>sklearn.metrics.roc_auc_score</code>.</li>
+      <li><strong>DeLong test:</strong> Correlated AUC comparison on same tasks (used for T3, T4). Implemented in <code>advisor_common.delong()</code>.</li>
+      <li><strong>Brier score:</strong> Mean squared error of predicted probabilities vs. binary outcomes. Lower = better calibrated.</li>
+    </ul>
+
+    <h3>Leave-One-Repository-Out (LORO)</h3>
+    <p>Train on 2 repositories, predict the 3rd. No mixing. Each task gets exactly one prediction from a model that never saw its repository.</p>
+    <ul>
+      <li><strong>Primary Advisor LORO AUC:</strong> 0.540 (95% CI: 0.463–0.615)</li>
+      <li><strong>Embedding Advisor LORO AUC:</strong> 0.497 (worse than chance)</li>
+      <li><strong>Hold-flag LORO AUC:</strong> 0.540 (pooled), per-repo: ansible 0.535, openlibrary 0.646, qutebrowser 0.528</li>
+    </ul>
+
+    <h3>Cost & Solve Metrics</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Metric</th>
+          <th>Formula</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>Cost per solved task</td><td>Total spend / tasks solved</td></tr>
+        <tr><td>Policy C ("Cheaper First") cost</td><td>Kimi cost + (1 − Kimi solved) × Opus cost</td></tr>
+        <tr><td>Advisor cost</td><td>Share_frontier × Opus cost + (1 − Share_frontier) × Policy C cost</td></tr>
+        <tr><td>Spend avoided</td><td>Sum of Policy C cost for flagged tasks</td></tr>
+        <tr><td>Solves lost</td><td>Flagged tasks that Policy C would have solved</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Bootstrap Confidence Intervals</h3>
+    <p>10,000 paired bootstrap resamples (seed 42). For each resample, tasks are sampled with replacement and all metrics recomputed. 95% CI = 2.5th and 97.5th percentiles.</p>
+
+    <h3>Leakage Checks</h3>
+    <ul>
+      <li><strong>Shuffled-label check (default mode):</strong> Labels permuted before training AND scoring. AUC should be ~0.5. Passes if mean AUC over 5 permutations is within 0.06 of 0.5.</li>
+      <li><strong>Frozen data hashes:</strong> Scripts refuse to run if input CSV SHA-256 differs from protocol-recorded values.</li>
+      <li><strong>No post-hoc feature selection:</strong> Screening threshold (10%) and kept features are frozen in protocol before first real run.</li>
+    </ul>
+  </section>
+
+  <section id="primary">
+    <h2>Primary Result <span class="tag tag-primary">Primary</span></h2>
+    <div class="summary-box">
+      <strong>Bottom line:</strong> The Advisor performed <strong>identically</strong> to the simple "cheaper first" baseline. The primary claim ("Advisor saves money") is <strong>not supported</strong>.
+    </div>
+
+    <h3>Policy Comparison (266 tasks, 20× stratified 5-fold CV, 10,000 bootstrap resamples)</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Policy</th>
+          <th>Description</th>
+          <th>Spend</th>
+          <th>Solved</th>
+          <th>Cost per Solved</th>
+          <th>vs Policy C</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>A</td>
+          <td>Frontier for all</td>
+          <td>$201.25</td>
+          <td>158.0</td>
+          <td>$1.274</td>
+          <td>+$0.509 (costs more)</td>
+        </tr>
+        <tr>
+          <td>B</td>
+          <td>Cheaper for all</td>
+          <td>$28.23</td>
+          <td>149.0</td>
+          <td>$0.189</td>
+          <td>−$0.575 (saves money but solves 15% fewer)</td>
+        </tr>
+        <tr style="background: #f0fdf4;">
+          <td><strong>C</strong></td>
+          <td><strong>Cheaper first (baseline)</strong></td>
+          <td><strong>$143.77</strong></td>
+          <td><strong>188.0</strong></td>
+          <td><strong>$0.765</strong></td>
+          <td><strong>— (reference)</strong></td>
+        </tr>
+        <tr style="background: #fef3c7;">
+          <td><strong>D</strong></td>
+          <td><strong>Advisor</strong></td>
+          <td><strong>$143.76</strong></td>
+          <td><strong>188.0</strong></td>
+          <td><strong>$0.765</strong></td>
+          <td><strong>~$0.000 (no difference)</strong></td>
+        </tr>
+        <tr>
+          <td>E</td>
+          <td>Repository-only</td>
+          <td>$143.77</td>
+          <td>188.0</td>
+          <td>$0.765</td>
+          <td>+$0.000</td>
+        </tr>
+        <tr>
+          <td>F</td>
+          <td>Existing-practice rule</td>
+          <td>$175.91</td>
+          <td>166.4</td>
+          <td>$1.057</td>
+          <td>+$0.292</td>
+        </tr>
+        <tr>
+          <td>G</td>
+          <td>Scrouting text head</td>
+          <td>$145.06</td>
+          <td>188.0</td>
+          <td>$0.772</td>
+          <td>+$0.007</td>
+        </tr>
+        <tr>
+          <td>H</td>
+          <td>Oracle (ceiling)</td>
+          <td>$128.97</td>
+          <td>188.0</td>
+          <td>$0.686</td>
+          <td>−$0.079</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p><strong>Primary claim verdict:</strong> Cost difference −0.000 (95% CI: −0.000 to +0.000); interval wholly below zero: <span class="fail">False</span>. Solve-rate difference +0.00 pp (lower 95% bound +0.00); non-inferior (bound above −2 pp): <span class="pass">True</span>. <strong>Verdict: not supported.</strong></p>
+  </section>
+
+  <section id="hypothesis">
+    <h2>Formal Hypothesis Tests <span class="tag tag-posthoc">Post Hoc</span> <span class="tag tag-primary">Primary</span></h2>
+    <p>Seven one-sided tests. <strong>Decision level: one-sided α = 0.05 (adviser's request, written confirmation pending); 0.05 one-sided = 90% two-sided interval, not the 95% of §9.</strong> The frozen level from protocol §9 is α = 0.025 (95% two-sided). Both levels are shown. Paired bootstrap, seed 42. The primary claim requires <strong>BOTH T1a AND T2 to reject H₀</strong> at the decision level (intersection rule, no multiplicity adjustment).</p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Test</th>
+          <th>Question</th>
+          <th>H₀ (Null)</th>
+          <th>H₁ (Alternative)</th>
+          <th>Observed</th>
+          <th>Decision at α=0.05</th>
+          <th>Decision at α=0.025 (frozen)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="background: #fef2f2;">
+          <td><strong>T1a</strong> (primary)</td>
+          <td>Does Advisor cost less per solve than Policy C?</td>
+          <td>Advisor ≥ Policy C</td>
+          <td>Advisor < Policy C</td>
+          <td>Δ = −$0.000</td>
+          <td class="fail">Fail to reject H₀</td>
+          <td class="fail">Fail to reject H₀</td>
+        </tr>
+        <tr style="background: #fef2f2;">
+          <td><strong>T1b</strong></td>
+          <td>Does it save ≥5% ($0.038/task)?</td>
+          <td>Advisor saves < $0.038</td>
+          <td>Advisor saves ≥ $0.038</td>
+          <td>Δ = −$0.000</td>
+          <td class="fail">Fail to reject H₀</td>
+          <td class="fail">Fail to reject H₀</td>
+        </tr>
+        <tr style="background: #f0fdf4;">
+          <td><strong>T2</strong> (primary)</td>
+          <td>Is Advisor's solve rate within 2% of Policy C?</td>
+          <td>Advisor 2+ pp below</td>
+          <td>Advisor within 2 pp</td>
+          <td>Δ = +0.00 pp</td>
+          <td class="pass"><strong>Reject H₀</strong> (non-inferior)</td>
+          <td class="pass"><strong>Reject H₀</strong> (non-inferior)</td>
+        </tr>
+        <tr style="background: #f0fdf4;">
+          <td>T3a</td>
+          <td>Better ranking than repository-only?</td>
+          <td>AUC Advisor ≤ AUC repo</td>
+          <td>AUC Advisor > AUC repo</td>
+          <td>0.600 vs 0.489</td>
+          <td class="pass"><strong>Reject H₀</strong> (p=0.019)</td>
+          <td class="pass"><strong>Reject H₀</strong> (p=0.019)</td>
+        </tr>
+        <tr>
+          <td>T3b</td>
+          <td>Better than Scrouting text head?</td>
+          <td>AUC Advisor ≤ AUC head</td>
+          <td>AUC Advisor > AUC head</td>
+          <td>0.600 vs 0.523</td>
+          <td class="fail">Fail to reject (p=0.117)</td>
+          <td class="fail">Fail to reject (p=0.117)</td>
+        </tr>
+        <tr style="background: #f0fdf4;">
+          <td>T4</td>
+          <td>Better than random chance (0.5)?</td>
+          <td>AUC ≤ 0.5</td>
+          <td>AUC > 0.5</td>
+          <td>AUC = 0.600</td>
+          <td class="pass"><strong>Reject H₀</strong></td>
+          <td class="pass"><strong>Reject H₀</strong></td>
+        </tr>
+        <tr style="background: #f0fdf4;">
+          <td>T5a</td>
+          <td>Predicted chance better calibrated than base rate?</td>
+          <td>Brier Advisor ≥ Brier base</td>
+          <td>Brier Advisor < Brier base</td>
+          <td>0.2413 vs 0.2464</td>
+          <td class="pass">Likely rejects</td>
+          <td class="pass">Likely rejects</td>
+        </tr>
+        <tr style="background: #f0fdf4;">
+          <td>T5b</td>
+          <td>Calibration slope > 0?</td>
+          <td>Slope ≤ 0</td>
+          <td>Slope > 0</td>
+          <td>Slope ≈ 0.8</td>
+          <td class="pass">Likely rejects</td>
+          <td class="pass">Likely rejects</td>
+        </tr>
+        <tr style="background: #f0fdf4;">
+          <td>T6</td>
+          <td>Is "cheaper first" better than "frontier for all"?</td>
+          <td>C ≥ Frontier</td>
+          <td>C < Frontier</td>
+          <td>$0.77 vs $1.27</td>
+          <td class="pass"><strong>Reject H₀</strong></td>
+          <td class="pass"><strong>Reject H₀</strong></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="warning-box">
+      <strong>Primary claim outcome at α=0.05 (decision level):</strong> T1a fails to reject → <strong>primary claim NOT supported</strong>. T1b adds a practical-significance margin (5%) — also not met. T2 passes (non-inferior solves). T3–T6 are supporting/descriptive only. At the frozen α=0.025 (§9), decisions are identical for these results.
+    </div>
+  </section>
+
+  <section id="holdflag">
+    <h2>Hold-Flag Exploratory Check <span class="tag tag-exploratory">Exploratory</span> <span class="tag tag-posthoc">Post Hoc</span></h2>
+    <p>The "hold flag" predicts <strong>"neither model solves"</strong> (base rate 29.3%, 78 of 266 tasks). Tested <strong>leave-one-repository-out</strong> (train on 2 repos, test on the 3rd).</p>
+
+    <h3>Per-Repository AUC (held out)</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Held-Out Repository</th>
+          <th>Tasks</th>
+          <th>Base Rate</th>
+          <th>AUC</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>ansible</td><td>96</td><td>38.5%</td><td>0.535</td></tr>
+        <tr style="background: #f0fdf4;"><td>openlibrary</td><td>91</td><td>27.5%</td><td class="pass"><strong>0.646</strong></td></tr>
+        <tr><td>qutebrowser</td><td>79</td><td>20.3%</td><td>0.528</td></tr>
+        <tr style="background: #fef3c7;"><td><strong>Pooled</strong></td><td><strong>266</strong></td><td><strong>29.3%</strong></td><td><strong>0.540</strong> (95% CI: 0.463–0.615)</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Pre-Registered Criteria (all three must pass)</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Criterion</th>
+          <th>Threshold</th>
+          <th>Observed</th>
+          <th>Met?</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="background: #fef2f2;">
+          <td>1</td>
+          <td>Pooled leave-one-repo AUC interval wholly above 0.5</td>
+          <td>Lower bound > 0.5</td>
+          <td>Lower bound = 0.463</td>
+          <td class="fail"><strong>NOT MET</strong></td>
+        </tr>
+        <tr style="background: #fef2f2;">
+          <td>2</td>
+          <td>At cutoff 0.5, precision interval lower bound > base rate</td>
+          <td>Lower bound > 0.293</td>
+          <td>Lower bound = 0.000</td>
+          <td class="fail"><strong>NOT MET</strong></td>
+        </tr>
+        <tr style="background: #f0fdf4;">
+          <td>3</td>
+          <td>100-task set AUC > 0.5</td>
+          <td>AUC > 0.5</td>
+          <td>AUC = 0.618 (CI: 0.504–0.724)</td>
+          <td class="pass"><strong>MET</strong></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="neutral-box">
+      <strong>Result:</strong> 1 of 3 criteria met. The signal does <strong>not reliably transfer</strong> to unseen repositories. This is exploratory and changes nothing about the primary claim.
+    </div>
+  </section>
+
+  <section id="embedding">
+    <h2>Embedding Advisor (Secondary Analysis) <span class="tag tag-secondary">Secondary</span></h2>
+    <p>A second Advisor using embeddings instead of handcrafted features — <strong>same outcome</strong>.</p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Policy</th>
+          <th>Cost per Solved</th>
+          <th>vs Policy C</th>
+          <th>Solve Rate Diff</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>C: Cheaper first</td><td>$0.765</td><td>—</td><td>—</td></tr>
+        <tr style="background: #fef3c7;"><td><strong>D: Embedding Advisor</strong></td><td><strong>$0.766</strong></td><td><strong>+$0.002</strong></td><td><strong>−0.02 pp</strong></td></tr>
+      </tbody>
+    </table>
+
+    <p>Primary claim: cost difference +0.002 (95% CI: −0.000 to +0.004); interval wholly below zero: <span class="fail">False</span>. Non-inferior solves: <span class="pass">True</span>. <strong>Verdict: not supported.</strong></p>
+    <p>Leave-one-repo AUC: <strong>0.497</strong> (worse than chance). 100-task AUC: 0.478.</p>
+  </section>
+
+  <section id="summary">
+    <h2>One-Sentence Summary</h2>
+    <div class="success-box">
+      <strong>The Delegation Advisor doesn't save money over the trivial "try cheap model first" strategy, its predictive signal doesn't transfer to new repositories, and the primary claim is formally not supported — though it does rank tasks better than random and better than a repository-only baseline.</strong>
+    </div>
+  </section>
+
+  <footer>
+    <p>Source files: <code>results-primary.md</code>, <code>results-secondary.md</code>, <code>results-exploratory.md</code>, <code>results-holdflag-loro.md</code>, <code>protocol-section12-entry-2026-11-07.md</code>, <code>protocol-section12-entry-2026-11-13.md</code>, <code>analysis_hypothesis_tests.py</code>, <code>analysis_holdflag_loro.py</code></p>
+    <p>All analyses use 266 tasks, 20 repetitions of stratified 5-fold CV, seed 42, 10,000 paired bootstrap resamples. One recorded run per task with 50-call cap.</p>
+  </footer>
+
+</body>
+</html>

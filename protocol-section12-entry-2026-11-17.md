@@ -1,0 +1,19 @@
+**17 November 2026: decision level changed from one-sided α = 0.025 to one-sided α = 0.05.**
+
+*Status.* Requested by the methodology adviser on 14 November 2026 (written confirmation pending). The decision level for the confirmatory and supporting hypothesis tests changes from one-sided α = 0.025 (the 95% two-sided interval of §9) to one-sided α = 0.05 (a 90% two-sided interval). The definition of the primary claim (cost below zero AND non-inferior solve rate) is unchanged; the level at which it is decided is now 0.05. Both levels and both p-values are printed for every test. If the two ever disagree, both are reported and the 0.05 result is the verdict. Non-inferiority is judged by the lower limit of the 90% two-sided interval being above −2 percentage points. The 5% margin of T1b is fixed before the run. The frozen primary verdict (not supported, 30 October analyses) is unaffected. No real run of `analysis_hypothesis_tests.py` has been done; the shuffled-label check was re-run on the edited script: in the shuffled-label check, no test of ranking, calibration or cost for the Advisor (T1, T3, T4, T5) rejected at either level. T2 and T6 reject under shuffled labels by construction (T2 because a shuffled-label Advisor routes about like cheaper-first, so non-inferiority holds trivially; T6 because it does not involve the Advisor), and carry no leakage information. The script's banner "no test should reject" refers to the Advisor's ranking, calibration and cost tests only.
+
+*Prior knowledge disclosed.* Before this change the DeLong one-sided p-values of about 0.0095 (against repository-only) and 0.0585 (against Scrouting's text head) were known. Neither crosses either threshold: the first rejects at both levels and the second fails at both.
+
+*Changes.*
+- `analysis_hypothesis_tests.py`: `ALPHA` constant changed from 0.025 to 0.05. Docstring updated to note adviser's request, written confirmation pending; 0.05 one-sided = 90% two-sided, not 95% of §9. Summary table now shows "Decision at 0.05" and "Decision at 0.025 (frozen)" columns. The frozen rule was 0.025; amended to 0.05 on 17 November 2026.
+- `testing-results-breakdown.html`: hypothesis test section updated to show both decision levels; table now has "Decision at α=0.05" and "Decision at α=0.025 (frozen)" columns; primary claim outcome note updated.
+- `analysis_hypothesis_tests.py` SHA-256: `8D19D1215809F7023CF415876F82378DEF4938EE7AB7F6A4A7ED336F245170DF`.
+- `protocol-v1.0.md`: §9 text unchanged. (File hash recorded via git commit; not self-referenced in the entry.)
+
+*Reason.* The adviser requested a change from the conservative 95% two-sided equivalent (0.025 one-sided) to the more conventional 90% two-sided equivalent (0.05 one-sided) for the decision rule, while keeping the frozen 95% interval as a reference. The protocol's primary claim (intersection of T1a and T2) and all other design choices remain exactly as frozen in §9.
+
+*Analyses affected.* All confirmatory and supporting hypothesis tests (T1–T6). The primary results in `results-primary.md` (which uses the 95% bootstrap interval, not a decision alpha) are not changed. The shuffled-label leakage check was re-run; no test of ranking, calibration or cost (T1, T3, T4, T5) rejected at either level.
+
+*Limits.* This change does not rescue a non-supported primary claim. It only changes the threshold for declaring a test result "significant." The 95% confidence intervals in `results-primary.md` and the protocol text are the frozen standard of §9.
+
+*Script safeguards verified.* The shuffled-label default mode (Advisor trained on permuted labels), the refusal to overwrite an existing output file in real mode, and the agreement check against `results-primary.md` are all still in place.

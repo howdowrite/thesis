@@ -14,8 +14,8 @@ repetitions or resamples differs from the primary analysis. All tests are ONE-SI
   T5  Confidence value (calibration): H0 Brier score of the Advisor >= Brier score of the base rate; H1 lower.
       H0 calibration slope <= 0 (the predicted chance carries no information); H1 positive. Reliability table and ECE.
   T6  Policy: H0 cost per solved task of cheaper-first (C) >= frontier for all (A); H1 lower.
-Decision level: one-sided alpha = 0.025 for every test, which is the level of the frozen rule (95% two-sided interval);
-p-values are shown so a reader can also apply 0.05. Bootstrap p-value = (1 + resamples on the H0 side) / (resamples + 1).
+Decision level: one-sided alpha = 0.05 for every test (adviser's request, written confirmation pending; 0.05 one-sided equals a 90% two-sided interval, not the 95% of §9);
+p-values are shown so a reader can also apply 0.025 (the frozen level). Bootstrap p-value = (1 + resamples on the H0 side) / (resamples + 1).
 No adjustment for multiple tests: T1 and T2 must BOTH pass for the primary claim (intersection rule); T3 to T6 are supporting.
 
 DEFAULT MODE is a leakage check: the Advisor is trained on SHUFFLED labels and scored against the real outcomes, so no test
@@ -36,7 +36,7 @@ from sklearn.metrics import roc_auc_score
 
 import advisor_common as AC
 
-ALPHA = 0.025
+ALPHA = 0.05
 
 
 def p_ge(x, thr):          # H0: statistic >= thr
@@ -166,12 +166,14 @@ def main():
     if not real_mode:
         w("**SHUFFLED-LABEL LEAKAGE CHECK. The Advisor was trained on shuffled labels; no test should reject. These numbers mean nothing.**\n")
     w(f"{N} tasks, features {keep}, {AC.REPS} repetitions of stratified 5-fold, seed {AC.SEED}, {B} paired bootstrap resamples. "
-      f"One-sided, alpha = {ALPHA} for every test. My arithmetic.\n")
+      f"One-sided; alpha = {ALPHA} (adviser's request, written confirmation pending; 0.05 one-sided = 90% two-sided, not 95% of §9); "
+      f"frozen alpha = 0.025 (95% two-sided of §9). My arithmetic.\n")
     w("## 1. Summary\n")
-    w("| Test | Question | H0 | H1 | Observed | One-sided p | Decision at 0.025 |")
-    w("|---|---|---|---|---|---|---|")
+    w("| Test | Question | H0 | H1 | Observed | One-sided p | Decision at 0.05 | Decision at 0.025 (frozen) |")
+    w("|---|---|---|---|---|---|---|---|")
     for t in tests:
-        w(f"| {t[0]} | {t[1]} | {t[2]} | {t[3]} | {t[4]} | {t[5]:.4f} | {dec(t[5])} |")
+        p = t[5]
+        w(f"| {t[0]} | {t[1]} | {t[2]} | {t[3]} | {t[4]} | {p:.4f} | {'reject H0' if p < 0.05 else 'fail to reject H0'} | {'reject H0' if p < 0.025 else 'fail to reject H0'} |")
     primary_pass = (p1a < ALPHA) and (p2 < ALPHA)
     w(f"\n**Frozen protocol verdict on the primary claim** (cost interval wholly below zero AND non-inferior solve rate): **{v}** "
       f"(cost interval upper bound {res['D']['d_ci'][1]:+.5f}; solve-rate lower bound {res['D']['dsolve_ci'][0]:+.2f} pp).")
