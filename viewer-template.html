@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Delegation Advisor Replay</title>
+<style>
+:root{--bg:#fafaf7;--card:#fff;--ink:#1c1f24;--mute:#5b6470;--line:#dcdfe4;--acc:#1f5fbf;--ok:#1d7a46;--bad:#b3261e;--warn:#8a5a00;--warnbg:#fff4d6;--bar:#1f5fbf;--bar2:#9aa5b4}
+@media (prefers-color-scheme:dark){:root{--bg:#14171b;--card:#1c2127;--ink:#e8eaed;--mute:#9aa4b0;--line:#323941;--acc:#6ea8ff;--ok:#5ccf93;--bad:#ff8a80;--warn:#ffd27a;--warnbg:#3a3014;--bar:#6ea8ff;--bar2:#5a6572}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.wrap{max-width:980px;margin:0 auto;padding:16px}
+h1{font-size:1.4rem;margin:.2em 0}h2{font-size:1.15rem;margin:1em 0 .4em}h3{font-size:1rem;margin:.8em 0 .3em}
+.sub{color:var(--mute);margin:0 0 12px}
+nav{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0}
+nav button{border:1px solid var(--line);background:var(--card);color:var(--ink);padding:8px 12px;border-radius:8px;cursor:pointer;font:inherit}
+nav button[aria-selected=true]{background:var(--acc);color:#fff;border-color:var(--acc)}
+.card{overflow-x:auto;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;margin:12px 0}
+.big{font-size:1.25rem;font-weight:600}
+.note{background:var(--warnbg);color:var(--warn);border-radius:8px;padding:10px 12px;margin:10px 0}
+.row{display:flex;gap:12px;flex-wrap:wrap}.row>*{flex:1 1 280px}
+table{border-collapse:collapse;width:100%;font-size:.93rem}th,td{padding:6px 8px;border-bottom:1px solid var(--line);text-align:right}th:first-child,td:first-child{text-align:left}
+th{color:var(--mute);font-weight:600}
+.bar{height:16px;background:var(--bar2);border-radius:8px;position:relative;overflow:hidden}.bar>i{position:absolute;left:0;top:0;bottom:0;background:var(--bar);display:block}
+.barrow{display:grid;grid-template-columns:200px 1fr 80px;gap:8px;align-items:center;margin:6px 0}
+@media(max-width:560px){.barrow{grid-template-columns:1fr 70px}.barrow .lbl{grid-column:1/-1}}
+.meter{position:relative;height:22px;background:var(--bar2);border-radius:11px;margin:10px 0 22px}
+.meter>i{position:absolute;left:0;top:0;bottom:0;background:var(--bar);border-radius:11px;display:block}
+.meter>b{position:absolute;top:-4px;bottom:-4px;width:3px;background:var(--bad)}
+.meter>span{position:absolute;top:26px;font-size:.78rem;color:var(--bad);transform:translateX(-50%);white-space:nowrap}
+.issue{max-height:230px;overflow:auto;white-space:pre-wrap;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px;font:13px/1.45 ui-monospace,Menlo,Consolas,monospace}
+.btn{border:1px solid var(--line);background:var(--card);color:var(--ink);padding:8px 14px;border-radius:8px;cursor:pointer;font:inherit}.btn.p{background:var(--acc);color:#fff;border-color:var(--acc)}
+.btn:disabled{opacity:.5;cursor:default}
+.ok{color:var(--ok);font-weight:600}.bad{color:var(--bad);font-weight:600}.mute{color:var(--mute)}
+.chips span{display:inline-block;border:1px solid var(--line);border-radius:999px;padding:2px 10px;margin:2px 4px 2px 0;font-size:.85rem}
+select,input[type=range]{font:inherit;max-width:100%}
+#sl{-webkit-appearance:none;appearance:none;width:100%;height:28px;background:transparent;margin:0;padding:0}
+#sl::-webkit-slider-runnable-track{height:6px;border-radius:3px;background:var(--bar2)}
+#sl::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:20px;height:20px;border-radius:50%;background:var(--acc);border:0;margin-top:-7px}
+#sl::-moz-range-track{height:6px;border-radius:3px;background:var(--bar2)}
+#sl::-moz-range-thumb{width:20px;height:20px;border-radius:50%;background:var(--acc);border:0}
+#sl:focus-visible{outline:2px solid var(--acc);outline-offset:4px}
+.sl-ticks{position:relative;height:1.5em}
+.sl-ticks span{position:absolute;top:0;transform:translateX(-50%);font-size:.78rem;color:var(--mute);white-space:nowrap}
+.sl-ticks span.cur{color:var(--ink);font-weight:700}
+select{width:100%}
+.hidden{display:none}
+details{margin:8px 0}summary{cursor:pointer}
+small{color:var(--mute)}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>Delegation Advisor: Replay</h1>
+<p class="sub">Recorded runs replayed on 266 real software tasks. Nothing here calls an AI model or costs money. Figures are from the recorded runs, one run per task.</p>
+<nav role="tablist" id="tabs"></nav>
+
+<section id="t1"></section>
+<section id="t2" class="hidden"></section>
+<section id="t3" class="hidden"></section>
+<section id="t4" class="hidden"></section>
+<section id="t5" class="hidden"></section>
+</div>
+
+<script type="application/json" id="data">__DATA__</script>
+<script>
+"use strict";
+const D = JSON.parse(document.getElementById('data').textContent);
+// outcomes are kept out of the visible page until a task is revealed
+const OUT = btoa(unescape(encodeURIComponent(JSON.stringify(D.outcomes))));
+delete D.outcomes;
+const getOut = () => JSON.parse(decodeURIComponent(escape(atob(OUT))));
+let OUTS = null; const outcome = id => (OUTS ||= getOut())[id];
+
+const THETA = D.cost_ratio_actual;
+const GRID = D.price_ratio_table.rows.map(r => ({label: r[0], r: r[0].includes('actual') ? THETA : parseFloat(r[0]), row: r}));
+const state = {i: 0, revealed: new Set(), gi: 0, hold: false};
+const $ = s => document.querySelector(s);
+const money = x => '$' + x.toFixed(x < 10 ? 3 : 2);
+const pct = x => (100 * x).toFixed(1) + '%';
+const esc = s => String(s).replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+const curR = () => GRID[state.gi].r;
+
+/* ---------- tabs ---------- */
+const TABS = ['1  The money','2  Task by task','3  Price slider','4  Hold flag (exploratory)','5  About the numbers'];
+const nav = $('#tabs');
+TABS.forEach((t, k) => { const b = document.createElement('button'); b.textContent = t; b.setAttribute('role','tab'); b.onclick = () => show(k); nav.appendChild(b); });
+function show(k){ [...nav.children].forEach((b,j)=>b.setAttribute('aria-selected', j===k)); for(let j=0;j<5;j++) $('#t'+(j+1)).classList.toggle('hidden', j!==k); if(k===1) renderTask(); if(k===2) renderSlider(); }
+
+/* ---------- 1 money ---------- */
+(function(){
+  const T = D.policy_totals, L = D.policy_labels;
+  const order = ['A','C','D','H','B'];
+  const maxC = Math.max(...order.map(k => T[k].cost_per_solved));
+  const saving = 1 - T.C.cost_per_solved / T.A.cost_per_solved;
+  const bars = order.map(k => `<div class="barrow"><div class="lbl">${esc(L[k])}</div><div class="bar"><i style="width:${100*T[k].cost_per_solved/maxC}%"></i></div><div><b>${money(T[k].cost_per_solved)}</b></div></div>`).join('');
+  const rows = order.map(k => `<tr><td>${esc(L[k])}</td><td>${money(T[k].spend)}</td><td>${T[k].solved.toFixed(0)}</td><td>${money(T[k].cost_per_solved)}</td><td>${(100*T[k].solved/T[k].spend).toFixed(1)}</td></tr>`).join('');
+  $('#t1').innerHTML = `
+  <div class="card"><div class="big">Trying the cheaper AI model first costs ${money(T.C.cost_per_solved)} per solved task, against ${money(T.A.cost_per_solved)} for the frontier model alone: ${(100*saving).toFixed(0)}% less, and ${T.C.solved-T.A.solved} more tasks solved (${T.C.solved} against ${T.A.solved}).</div>
+  <p>The rule is: give each task to the cheaper model (Kimi K2.5) once. If it fails, give the task to the frontier model (Claude Opus 4.6) once. Both attempts are paid for. This is the policy the study measured.</p></div>
+  <div class="card"><h2>Cost per solved task (lower is better)</h2>${bars}
+  <small>Cheaper for all looks cheapest, but it leaves ${D.n_tasks-T.B.solved} tasks unsolved. The perfect advance choice is a ceiling nobody can reach, because it needs to know the outcome first.</small></div>
+  <div class="card"><h2>Same numbers as a table</h2><table><tr><th>Policy</th><th>Spend</th><th>Solved</th><th>Cost per solved</th><th>Solves per $100</th></tr>${rows}</table></div>
+  <div class="card"><h2>What the Advisor adds</h2>
+  <p><b>At today's prices, nothing.</b> The Advisor reads each task before it starts and estimates the chance that the cheaper model solves it. It would skip the cheaper model only if that chance fell below about ${pct(THETA)}. No task's estimate got that low, so it behaved exactly like "cheaper first". The saving above comes from the policy, not from the Advisor. The Advisor is the tool used to test whether predicting difficulty in advance could do better. In this data it could not.</p></div>
+  <div class="note"><b>Read these figures with care.</b> They are API prices on recorded runs, not a forecast and not a saving for someone on a monthly plan (for them the same result means more tasks done inside the usage limit). One run per task, three Python projects, a 50-call cap per attempt, and tasks counted as solved when the hidden tests passed. Wrong patches that pass the tests have not been audited yet.</div>
+  <small>The Advisor total in the full results file is ${money(T.D.spend)} because it averages over 20 repetitions in which one task was occasionally routed to the frontier model. The task-by-task view uses one averaged prediction per task, so its Advisor total equals cheaper first.</small>`;
+})();
+
+/* ---------- 2 task by task ---------- */
+function taskCosts(id, r){
+  const o = outcome(id), ck = o.kimi_cost * (r / THETA), co = o.opus_cost;
+  return {o, ck, co, cf: ck + (o.kimi_solved ? 0 : co), cfSolved: (o.kimi_solved | o.opus_solved), sf: co, sfSolved: o.opus_solved};
+}
+function totals(r){
+  const S = {A:[0,0],B:[0,0],C:[0,0],D:[0,0],H:[0,0]};
+  D.tasks.forEach(t => { if(!state.revealed.has(t.task_id)) return;
+    const c = taskCosts(t.task_id, r), o = c.o;
+    S.A[0]+=c.co; S.A[1]+=o.opus_solved;
+    S.B[0]+=c.ck; S.B[1]+=o.kimi_solved;
+    S.C[0]+=c.cf; S.C[1]+=c.cfSolved;
+    const route = t.p_advisor < r;
+    S.D[0]+= route ? c.sf : c.cf; S.D[1]+= route ? c.sfSolved : c.cfSolved;
+    S.H[0]+= o.kimi_solved ? c.ck : c.co; S.H[1]+= c.cfSolved; });
+  return S;
+}
+function renderTask(){
+  const t = D.tasks[state.i], r = curR(), rev = state.revealed.has(t.task_id);
+  const f = t.features, route = t.p_advisor < r;
+  const opts = D.tasks.map((x,k)=>`<option value="${k}" ${k===state.i?'selected':''}>${k+1}. ${esc(x.task_id.slice(0,48))}</option>`).join('');
+  let h = `<div class="card"><div class="row"><div><b>Task ${state.i+1} of ${D.n_tasks}</b> <span class="mute">· ${esc(t.repo)} · revealed ${state.revealed.size} of ${D.n_tasks}</span></div>
+  <div><select id="jump" aria-label="Jump to task">${opts}</select></div></div>
+  <h3>Step 1: the task, as a developer would see it before starting</h3>
+  <div class="issue">${esc(t.issue_text)}</div>
+  <div class="chips"><small>What the Advisor reads:</small> <span>length ${f.n_chars} characters</span><span>code blocks ${f.n_code_blocks}</span><span>error or trace ${f.has_trace_or_error?'yes':'no'}</span><span>code references ${f.n_code_refs}</span><span>headings ${f.n_headings}</span><span>mentions tests ${f.mentions_tests?'yes':'no'}</span><span>list items ${f.n_list_items}</span></div></div>
+  <div class="card"><h3>Step 2: the Advisor's call</h3>
+  <div>Predicted chance that the cheaper model solves this task: <b>${pct(t.p_advisor)}</b></div>
+  <div class="meter"><i style="width:${100*t.p_advisor}%"></i><b style="left:${100*r}%"></b><span style="left:${Math.min(Math.max(100*r,8),92)}%">break-even ${pct(r)}</span></div>
+  <div class="big">${route?'Go straight to the frontier model':'Try the cheaper model first'}</div>
+  <small>The chance is an out-of-fold average over 20 repetitions: it comes from models that never saw this task. It ranks tasks only slightly better than chance (AUC 0.600).</small>
+  ${state.hold?`<div class="note">Hold-flag score ${t.hold_score.toFixed(2)}: ${t.hold_score>=0.5?'would be flagged "a developer might take this one" at the 0.5 cutoff':'not flagged at the 0.5 cutoff'}. Exploratory, and not shown to work on repositories the model has not seen (tab 4).</div>`:''}
+  <p><button class="btn p" id="rev" ${rev?'disabled':''}>Step 3: reveal what happened</button> <button class="btn" id="prev">Previous</button> <button class="btn" id="next">Next</button></p>`;
+  if(rev){
+    const c = taskCosts(t.task_id, r), o = c.o, yn = x => x?'<span class="ok">solved</span>':'<span class="bad">not solved</span>';
+    const cheaperRoute = c.cf <= c.sf, hindsight = o.kimi_solved ? 'cheaper first' : 'straight to the frontier model';
+    h += `<table><tr><th>Recorded run</th><th>Result</th><th>Cost</th></tr>
+    <tr><td>Cheaper model (Kimi)</td><td>${yn(o.kimi_solved)}</td><td>${money(c.ck)}</td></tr>
+    <tr><td>Frontier model (Opus)</td><td>${yn(o.opus_solved)}</td><td>${money(c.co)}</td></tr>
+    <tr><td><b>Route: cheaper first, escalate once</b></td><td>${yn(c.cfSolved)}</td><td>${money(c.cf)}</td></tr>
+    <tr><td><b>Route: straight to the frontier model</b></td><td>${yn(c.sfSolved)}</td><td>${money(c.sf)}</td></tr></table>
+    <p>Hindsight: ${hindsight} was the cheaper route for this task. The Advisor chose <b>${route?'straight to the frontier model':'cheaper first'}</b>, which was ${((route?'straight to the frontier model':'cheaper first')===hindsight)?'<span class="ok">the same</span>':'<span class="bad">not the same</span>'}.${o.neither?' <span class="mute">Neither model solved this task.</span>':''}</p>`;
+  }
+  h += `</div><div class="card"><h3>Running totals over the tasks revealed so far</h3><div id="tot"></div>
+  <p><button class="btn" id="all">Reveal all remaining</button> <button class="btn" id="reset">Reset</button></p></div>`;
+  $('#t2').innerHTML = h;
+  $('#jump').onchange = e => { state.i = +e.target.value; renderTask(); };
+  $('#prev').onclick = () => { state.i = (state.i + D.n_tasks - 1) % D.n_tasks; renderTask(); };
+  $('#next').onclick = () => { state.i = (state.i + 1) % D.n_tasks; renderTask(); };
+  $('#rev').onclick = () => { state.revealed.add(t.task_id); renderTask(); };
+  $('#all').onclick = () => { D.tasks.forEach(x => state.revealed.add(x.task_id)); renderTask(); };
+  $('#reset').onclick = () => { state.revealed.clear(); renderTask(); };
+  renderTotals();
+}
+function renderTotals(){
+  const r = curR(), S = totals(r), L = D.policy_labels;
+  const rowsH = ['A','B','C','D','H'].map(k => `<tr><td>${esc(L[k])}</td><td>${money(S[k][0])}</td><td>${S[k][1]}</td><td>${S[k][1]?money(S[k][0]/S[k][1]):'-'}</td></tr>`).join('');
+  let check = '';
+  if(state.revealed.size === D.n_tasks && Math.abs(r - THETA) < 1e-9){
+    const T = D.policy_totals, ok = ['A','B','C','H'].every(k => Math.abs(S[k][0]-T[k].spend) < 0.011 && S[k][1] === Math.round(T[k].solved));
+    check = ok ? '<p class="ok">All 266 revealed. Policies A, B, C and the ceiling match the full-run results file.</p>' : '<p class="bad">Totals do not match the results file. Do not use this build.</p>';
+  }
+  $('#tot').innerHTML = `<small>Price ratio in use: ${GRID[state.gi].label}${GRID[state.gi].r===THETA?'':' (changed on tab 3: this scales the cheaper model\'s recorded cost, not its predictions)'}</small>
+  <table><tr><th>Policy</th><th>Spend</th><th>Solved</th><th>Cost per solved</th></tr>${rowsH}</table>${check}`;
+}
+
+/* ---------- 3 slider ---------- */
+function renderSlider(){
+  const g = GRID[state.gi], row = g.row, share = parseFloat(row[1]);
+  const steps = GRID.map((x,k)=>`<span style="left:calc(10px + (100% - 20px) * ${k} / ${GRID.length-1})">${esc(x.label.replace(' (actual)',''))}</span>`).join('');
+  // chart of Advisor cost change vs cheaper first, with intervals
+  const iv = r => r[3].replace(/\+/g,'').split(' to ').map(Number);
+  const W=620,H=200,pl=44,pr=12,pt=14,pb=26, lo=-0.6, hi=0.2, X=k=>pl+(W-pl-pr)*(k+0.5)/GRID.length, Y=v=>pt+(H-pt-pb)*(hi-v)/(hi-lo);
+  let svg = `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Advisor cost per solved task against cheaper first, by price ratio, with 95% intervals"><line x1="${pl}" x2="${W-pr}" y1="${Y(0)}" y2="${Y(0)}" stroke="currentColor" stroke-dasharray="4 3" opacity=".5"/><text x="4" y="${Y(0)+4}" font-size="11" fill="currentColor">0</text><text x="4" y="${Y(-0.4)+4}" font-size="11" fill="currentColor">-0.4</text><text x="4" y="${Y(0.2)+4}" font-size="11" fill="currentColor">+0.2</text>`;
+  GRID.forEach((x,k)=>{ const [a,b]=iv(x.row), v=parseFloat(x.row[2]); const sel=k===state.gi;
+    svg += `<line x1="${X(k)}" x2="${X(k)}" y1="${Y(Math.min(b,hi))}" y2="${Y(Math.max(a,lo))}" stroke="${sel?'var(--bad)':'var(--bar)'}" stroke-width="2"/><circle cx="${X(k)}" cy="${Y(v)}" r="${sel?6:4}" fill="${sel?'var(--bad)':'var(--bar)'}"/><text x="${X(k)}" y="${H-8}" text-anchor="middle" font-size="11" fill="currentColor">${esc(x.label.replace(' (actual)',''))}</text>`; });
+  svg += `</svg>`;
+  let msg;
+  if(share >= 90) msg = `At this ratio the Advisor sends about ${share.toFixed(0)}% of tasks straight to the frontier model. That is simply "always use the frontier model", which needs no Advisor. The cost falls because cheaper first has stopped being cheap here, and ${Math.abs(parseFloat(row[4]))} points of the solve rate are lost.`;
+  else if(g.r === THETA || share < 5) msg = `At this price the Advisor skips the cheaper model for almost no task, so it behaves like cheaper first.`;
+  else msg = `Here the Advisor sends ${share.toFixed(1)}% of tasks to the frontier model. The change in cost per solved task is ${row[2]}, with a 95% interval of ${row[3]}. ${(iv(row)[0] <= 0 && iv(row)[1] >= 0) ? 'The interval includes zero, so no real difference can be claimed.' : ''} The solve rate changes by ${row[4]} points.`;
+  // Build the page once. Rebuilding the <input> on every move destroys it mid-drag and stalls the slider,
+  // so only the parts below the slider are redrawn.
+  if(!$('#sl')){
+    $('#t3').innerHTML = `<div class="card"><h2>When would routing start to matter?</h2>
+  <p>The slider changes the <b>price</b> of the cheaper model, not the predictions. Price ratio = cheaper model's cost ÷ frontier model's cost. Today's ratio is ${THETA.toFixed(2)}.</p>
+  <input type="range" id="sl" min="0" max="${GRID.length-1}" value="${state.gi}" step="1" style="width:100%" aria-label="Price ratio"><div class="sl-ticks">${steps}</div>
+  <div id="sl-out"></div></div>
+  <div class="card" id="sl-chart"></div>
+  <div class="note">This table is post hoc and exploratory. It shows when routing would start to matter. It is not a claim about any real price. The numbers are copied from the saved results file, not recomputed here. Choosing a ratio here also changes the task-by-task view.</div>`;
+    $('#sl').oninput = e => { state.gi = +e.target.value; renderSlider(); };
+  }
+  $('#sl').value = state.gi;
+  document.querySelectorAll('.sl-ticks span').forEach((s,k)=>s.classList.toggle('cur',k===state.gi));
+  $('#sl-out').innerHTML = `<p class="big">Price ratio ${esc(g.label)}</p><p>${msg}</p>
+  <table><tr><th></th><th>Advisor</th><th>Scrouting text head</th></tr>
+  <tr><td>Share of tasks sent to the frontier model</td><td>${row[1]}</td><td>${row[5]}</td></tr>
+  <tr><td>Change in cost per solved task vs cheaper first</td><td>${row[2]} (${row[3]})</td><td>${row[6]} (${row[7]})</td></tr>
+  <tr><td>Change in solve rate (points), Advisor</td><td>${row[4]}</td><td></td></tr>
+  <tr><td>Perfect advance choice vs cheaper first (ceiling)</td><td>${row[8]}</td><td></td></tr></table>`;
+  $('#sl-chart').innerHTML = `<h3>Advisor against cheaper first at each price (dollars per solved task; below zero is a saving)</h3>${svg}`;
+}
+
+/* ---------- 4 hold flag ---------- */
+function renderHold(){
+  $('#t4').innerHTML = `<div class="card"><h2>Hold flag: tasks neither model is expected to solve</h2>
+  <p>About 29% of tasks (78 of 266) are solved by neither model. The idea: flag them so a developer can look at them instead of spending on two failed attempts. It is advice only. This is exploratory and is not part of the main finding.</p>
+  <label><input type="checkbox" id="hold" ${state.hold?'checked':''}> Show hold-flag scores in the task-by-task view (off by default)</label></div>
+  <div class="card"><h3>Result 1: cross-validation that mixes the three projects (6 November)</h3>
+  <p>The ranking looked better than chance: AUC 0.632 (repository-only 0.494).</p>
+  <table><tr><th>Cutoff</th><th>Tasks flagged</th><th>Right about "neither"</th><th>Spend avoided</th><th>Solves lost</th></tr>
+  <tr><td>0.3</td><td>112</td><td>38% (chance: 29%)</td><td>$80.03</td><td>69</td></tr>
+  <tr><td>0.5</td><td>15</td><td>52% (interval 32% to 72%)</td><td>$12.93</td><td>7</td></tr>
+  <tr><td>0.7</td><td>0</td><td>-</td><td>$0.10</td><td>0</td></tr></table></div>
+  <div class="card"><h3>Result 2: tested on a project the model had not seen (8 November)</h3>
+  <p>The signal did not carry over: AUC 0.540 (interval 0.463 to 0.615, which includes 0.5, i.e. chance).</p>
+  <table><tr><th>Cutoff</th><th>Tasks flagged</th><th>Right about "neither"</th><th>Spend avoided</th><th>Solves lost</th></tr>
+  <tr><td>0.3</td><td>118</td><td>31% (chance: 29%)</td><td>$66.66</td><td>82</td></tr>
+  <tr><td>0.5</td><td>4</td><td>2 of 4 (interval 0% to 100%)</td><td>$5.57</td><td>2</td></tr></table>
+  <p>On the separate 100-task set the ranking was weakly above chance (AUC 0.618, interval 0.504 to 0.724), but the flagged tasks were no more likely to be "neither" than any other.</p>
+  <p class="bad">Verdict: the hold flag is not shown to work on projects it has not seen. Spend avoided and solves lost are shown separately because a task wrongly skipped is a solve lost.</p></div>
+  <small>Sources: results-exploratory.md and results-holdflag-loro.md. "Neither solved" includes runs that hit the 50-call cap.</small>`;
+  $('#hold').onchange = e => { state.hold = e.target.checked; };
+}
+renderHold();
+
+/* ---------- 5 about ---------- */
+$('#t5').innerHTML = `<div class="card"><h2>About the numbers</h2>
+<h3>The data</h3><p>266 real software issues from three Python projects (ansible, openlibrary, qutebrowser), taken from the public Scrouting release (arXiv 2608.04804). Each task was run once by each model. A run could make at most 50 model calls and spend $2.00; if the cap was reached, the work done so far was submitted. The cheaper model hit the cap in 128 of 266 runs, so some of its failures mean "ran out of room".</p>
+<h3>The two models</h3><p>Cheaper: Kimi K2.5. Frontier: Claude Opus 4.6. The cheaper model costs about ${pct(THETA)} of the frontier model per task, roughly 7 times less.</p>
+<h3>Cost per solved task</h3><p>Total money spent divided by tasks solved. A task counts as solved if the hidden tests passed.</p>
+<h3>Break-even</h3><p>Skipping the cheaper model pays off only if its chance of success is below the price ratio (about ${pct(THETA)}). Below that, a failed cheaper attempt loses more than it could save.</p>
+<h3>AUC</h3><p>How well a predictor ranks tasks the cheaper model solves above ones it fails. 0.5 is a coin flip, 1.0 is perfect. The Advisor scored 0.600, and 0.517 on a project it had not seen.</p>
+<h3>Out-of-fold</h3><p>Every prediction shown comes from a model trained on other tasks, repeated 20 times with different splits and averaged. No task is predicted by a model that saw it.</p>
+<h3>What is not known</h3><ul><li>Whether tasks counted as solved include wrong patches that pass the tests (not audited).</li><li>How much results vary from one run to another (one run per task).</li><li>Whether the results hold beyond these three Python projects.</li></ul>
+<h3>What the Advisor uses</h3><p>Only what a developer would know before starting: the issue text. Counts of length, code blocks, error traces, code references, headings, test mentions and list items. Nothing taken from the finished solution.</p></div>`;
+
+show(0);
+</script>
+</body>
+</html>
